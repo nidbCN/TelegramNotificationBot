@@ -16,7 +16,7 @@ namespace TelegramNotificationBot.Core
     {
 
         [Function("Notifications")]
-        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
         {
             var token = req.Query["token"];
             logger.LogInformation("Temp debug: path: {path}, base: {pb}", req.Path, req.PathBase);
