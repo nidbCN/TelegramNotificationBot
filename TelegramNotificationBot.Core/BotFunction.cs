@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using TelegramNotificationBot.Core.Configs;
-using TelegramNotificationBot.Core.Services;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -16,8 +15,9 @@ namespace TelegramNotificationBot.Core;
 public class BotFunction(
     ILogger<BotFunction> logger,
     IOptions<TelegramConfig> options,
-    ITelegramBotClient botClient,
-    UpdateHandler handler)
+    JsonSerializerOptions jsonOptions,
+    Dictionary<Guid, long> webhookTable,
+    ITelegramBotClient botClient)
 {
     [Function("Bot")]
     public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
@@ -32,36 +32,45 @@ public class BotFunction(
         if (token != options.Value.SecretToken)
             return new ForbidResult();
 
-        using var reader = new StreamReader(req.Body);
-        var content = await reader.ReadToEndAsync();
+        logger.LogInformation("Authorization completed.");
 
-        logger.LogInformation("Received with content: {content}", content);
-
-        var jsonOptions = new JsonSerializerOptions
+        var update = await JsonSerializer.DeserializeAsync<Update>(req.Body, jsonOptions);
+        if (update is null)
         {
-            PropertyNameCaseInsensitive = true
-        };
+            using var reader = new StreamReader(req.Body);
+            var content = await reader.ReadToEndAsync();
+            logger.LogWarning("Deserialize request payload failed, original data: `{content}`.", content);
+            return new OkResult();
+        }
 
-        var update = JsonSerializer.Deserialize<Update>(content, jsonOptions);
+        var message = update.Message;
+        if (message is null)
+        {
+            logger.LogWarning("Received unknown update type {type}, ignore.", update.Type);
+            return new OkResult();
+        }
 
-        logger.LogInformation("Deserialize update, id: {id}", update?.Message?.Chat.Id);
+        logger.LogInformation("Received message from {name}, chat:{id}, content: {content}"
+            , message.From?.Username, message.Chat.Id, message.Text);
 
         try
         {
-            var chat = update?.Message?.Chat;
-            if (chat is null)
+            if (message.Text?.StartsWith('/') ?? false)
             {
-                logger.LogWarning("Chat is null!");
-            }
+                var commandText = message.Text!;
+                var commandParts = commandText.Split();
+                var command = commandParts[0];
+                logger.LogInformation("Received command {text}", command);
 
-            var chatId = new ChatId(chat.Id);
-            if (chatId is null)
-            {
-                logger.LogWarning("Chat id is null.");
-            }
+                if (command.Equals("new", StringComparison.OrdinalIgnoreCase))
+                {
+                    var guid = Guid.NewGuid();
+                    webhookTable.Add(guid, message.Chat.Id);
 
-            await botClient.SendMessage(chatId!, "here", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
-            await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
+                    var replyMessage = $"Now you have a Webhook to this chat, send HTTP POST to `https://tg-notification-bot.azurewebsites.net/api/notifications?token={guid.ToString()}` to send message to this chat.";
+                    await botClient.SendMessage(message.Chat, replyMessage, parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+                }
+            }
         }
         catch (Exception e)
         {

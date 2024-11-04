@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +25,12 @@ var host = new HostBuilder()
                 new TelegramBotClient(telegramConfig.Get<TelegramConfig>()!.BotToken, httpClient));
         services.ConfigureTelegramBotMvc();
 
+        services.AddSingleton<JsonSerializerOptions>(_ => new()
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        services.AddSingleton<Dictionary<Guid, long>>();
         services.AddHostedService<HostedBotService>();
-        services.AddSingleton<UpdateHandler>();
     })
  .Build();
 
