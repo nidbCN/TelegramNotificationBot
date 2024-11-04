@@ -37,6 +37,8 @@ public class BotFunction(
 
         var update = JsonSerializer.Deserialize<Update>(content);
 
+        logger.LogInformation("Deserialize update: {update}", update);
+
         try
         {
             await botClient.SendMessage(update.Message.Chat.Id, "text");
