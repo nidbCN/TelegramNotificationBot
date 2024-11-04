@@ -23,7 +23,7 @@ internal class HostedBotService(
         var webhookAddress = options.Value.BotWebhookUrl.ToString();
         logger.LogInformation("Setting webhook: {WebhookAddress}", webhookAddress);
         await botClient.SetWebhook(
-           url: webhookAddress + "#" + DateTimeOffset.Now.ToString("s"),
+           url: webhookAddress,
            allowedUpdates: Array.Empty<UpdateType>(),
            secretToken: options.Value.SecretToken,
            cancellationToken: cancellationToken);
