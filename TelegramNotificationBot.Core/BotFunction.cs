@@ -67,13 +67,13 @@ public class BotFunction(
                     var guid = Guid.NewGuid();
                     webhookTable.Add(guid, message.Chat.Id);
 
-                    var replyMessage = $"Now you have a Webhook to this chat, send HTTP POST to `https://tg-notification-bot.azurewebsites.net/api/notifications?token={guid.ToString()}` to send message to this chat.";
+                    var replyMessage = $"Now you have a Webhook to this chat, send HTTP POST to `https://tg-notification-bot.azurewebsites.net/api/notifications?token={guid.ToString()}` to send message to this chat";
                     await botClient.SendMessage(message.Chat, replyMessage, parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
                 }
                 else
                 {
                     logger.LogWarning("Unknown command, send a prompt.");
-                    await botClient.SendMessage(message.Chat, $"Unknown command {command}.", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+                    await botClient.SendMessage(message.Chat, $"Unknown command {command}", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
                 }
             }
         }
