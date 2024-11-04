@@ -20,20 +20,21 @@ public class BotFunction(
     [Function("Bot")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
     {
+        logger.LogInformation("Received request, start authorizate.");
+
         if (!req.Headers.TryGetValue("X-Telegram-Bot-Api-Secret-Token", out var token))
         {
-            return new UnauthorizedResult();
+            return new UnauthorizedResult("Token not set.");
         }
 
         if (token != options.Value.SecretToken)
-            return new ForbidResult();
+            return new ForbidResult("Token not match.");
 
         logger.LogInformation("C# HTTP trigger function processed a request.");
 
-        var update = JsonSerializer.Deserialize<Update>(req.Body);
-
         try
         {
+            var update = JsonSerializer.Deserialize<Update>(req.Body);
             handler.HandleUpdateAsync(botClient, update, CancellationToken.None).Wait();
         }
         catch (Exception exception)
