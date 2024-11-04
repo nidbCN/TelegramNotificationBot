@@ -18,7 +18,7 @@ public class BotFunction(
     UpdateHandler handler)
 {
     [Function("Bot")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
     {
         logger.LogInformation("Received request, start authorizate.");
 
@@ -34,15 +34,15 @@ public class BotFunction(
 
         try
         {
-            var update = JsonSerializer.Deserialize<Update>(req.Body);
-            handler.HandleUpdateAsync(botClient, update, CancellationToken.None).Wait();
+
+            var update = await JsonSerializer.DeserializeAsync<Update>(req.Body);
+            await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
         }
         catch (Exception exception)
         {
-            handler.HandleErrorAsync(botClient, exception, Telegram.Bot.Polling.HandleErrorSource.HandleUpdateError, CancellationToken.None).Wait();
+            await handler.HandleErrorAsync(botClient, exception, Telegram.Bot.Polling.HandleErrorSource.HandleUpdateError, CancellationToken.None);
         }
 
         return new OkResult();
     }
-
 }
