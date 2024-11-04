@@ -46,7 +46,7 @@ public class BotFunction(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error occured.");
+            logger.LogError(e, "Error occured. {msg}, {trace}", e.Message, e.StackTrace);
         }
         
         return new OkResult();
