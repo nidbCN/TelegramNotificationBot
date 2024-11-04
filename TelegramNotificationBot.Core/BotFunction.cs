@@ -32,16 +32,9 @@ public class BotFunction(
 
         logger.LogInformation("C# HTTP trigger function processed a request.");
 
-        try
-        {
 
-            var update = await JsonSerializer.DeserializeAsync<Update>(req.Body);
-            await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
-        }
-        catch (Exception exception)
-        {
-            await handler.HandleErrorAsync(botClient, exception, Telegram.Bot.Polling.HandleErrorSource.HandleUpdateError, CancellationToken.None);
-        }
+        var update = await JsonSerializer.DeserializeAsync<Update>(req.Body);
+        await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
 
         return new OkResult();
     }
