@@ -32,7 +32,7 @@ internal class HostedBotService(
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         // Remove webhook on app shutdown
-        _logger.LogInformation("Removing webhook");
+        logger.LogInformation("Removing webhook");
         await botClient.DeleteWebhook(cancellationToken: cancellationToken);
     }
 }
