@@ -32,8 +32,9 @@ public class BotFunction(
 
         logger.LogInformation("C# HTTP trigger function processed a request.");
 
-
         var update = await JsonSerializer.DeserializeAsync<Update>(req.Body);
+
+        await botClient.SendMessage(update.Message.Chat.Id, "text");
         await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
 
         return new OkResult();
