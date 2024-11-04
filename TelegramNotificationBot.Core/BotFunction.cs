@@ -37,7 +37,12 @@ public class BotFunction(
 
         logger.LogInformation("Received with content: {content}", content);
 
-        var update = JsonSerializer.Deserialize<Update>(content);
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        var update = JsonSerializer.Deserialize<Update>(content, options);
 
         logger.LogInformation("Deserialize update, id: {id}", update?.Message?.Chat.Id);
 
