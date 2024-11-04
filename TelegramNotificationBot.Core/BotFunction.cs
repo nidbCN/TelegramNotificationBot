@@ -24,11 +24,11 @@ public class BotFunction(
 
         if (!req.Headers.TryGetValue("X-Telegram-Bot-Api-Secret-Token", out var token))
         {
-            return new UnauthorizedResult("Token not set.");
+            return new UnauthorizedResult();
         }
 
         if (token != options.Value.SecretToken)
-            return new ForbidResult("Token not match.");
+            return new ForbidResult();
 
         logger.LogInformation("C# HTTP trigger function processed a request.");
 
