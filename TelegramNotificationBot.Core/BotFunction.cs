@@ -30,21 +30,23 @@ public class BotFunction(
         if (token != options.Value.SecretToken)
             return new ForbidResult();
 
-
-        logger.LogInformation("C# HTTP trigger function processed a request.");
-
         using var reader = new StreamReader(req.Body);
         var content = await reader.ReadToEndAsync();
-        logger.LogInformation("Read to end, {c}", content);
 
-        var jsonStr = JsonSerializer.Serialize(req.Form);
-        logger.LogInformation("Form {c}", jsonStr);
+        logger.LogInformation("Received with content: {content}", content);
 
         var update = JsonSerializer.Deserialize<Update>(content);
 
-        await botClient.SendMessage(update.Message.Chat.Id, "text");
-        await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
-
+        try
+        {
+            await botClient.SendMessage(update.Message.Chat.Id, "text");
+            await handler.HandleUpdateAsync(botClient, update, CancellationToken.None);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error occured.");
+        }
+        
         return new OkResult();
     }
 }
