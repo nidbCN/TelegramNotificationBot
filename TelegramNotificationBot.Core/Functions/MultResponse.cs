@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Telegram.Bot.Types;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace TelegramNotificationBot.Core.Functions;
 
 public record MultiResponse
 {
-    [CosmosDBOutput("nidb", "database",
-        Connection = "CosmosDbConnectionSetting", CreateIfNotExists = true)]
+    [SqlOutput("dbo.NotificationBot_Webhook", connectionStringSetting: "SqlConnectionString")]
     public WebhookBind? Webhook { get; set; }
 
     public required IActionResult HttpResult { get; set; }
@@ -16,5 +14,5 @@ public record MultiResponse
 public record WebhookBind
 {
     public required Guid Id { get; set; }
-    public required Chat Chat { get; set; }
+    public required long ChatId { get; set; }
 }

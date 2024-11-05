@@ -14,20 +14,8 @@ internal class HostedBotService(
 {
 
     public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        // Configure custom endpoint per Telegram API recommendations:
-        // https://core.telegram.org/bots/api#setwebhook
-        // If you'd like to make sure that the webhook was set by you, you can specify secret data
-        // in the parameter secret_token. If specified, the request will contain a header
-        // "X-Telegram-Bot-Api-Secret-Token" with the secret token as content.
-        var webhookAddress = options.Value.BotWebhookUrl.ToString();
-        logger.LogInformation("Setting webhook: {WebhookAddress}", webhookAddress);
-        await botClient.SetWebhook(
-           url: webhookAddress,
-           allowedUpdates: Array.Empty<UpdateType>(),
-           secretToken: options.Value.SecretToken,
-           cancellationToken: cancellationToken);
-    }
+        => await UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken, cancellationToken);
+
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -35,4 +23,10 @@ internal class HostedBotService(
         logger.LogInformation("Removing webhook");
         await botClient.DeleteWebhook(cancellationToken: cancellationToken);
     }
+
+    public static async Task UpdateWebhook(ITelegramBotClient bot, Uri webhookUrl, string token, CancellationToken cancellationToken)
+        => await bot.SetWebhook(url: webhookUrl.ToString(),
+            allowedUpdates: [UpdateType.Message],
+            secretToken: token,
+            cancellationToken: cancellationToken);
 }

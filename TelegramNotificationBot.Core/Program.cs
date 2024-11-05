@@ -29,7 +29,7 @@ var host = new HostBuilder()
         {
             PropertyNameCaseInsensitive = true
         });
-        services.AddSingleton<Dictionary<Guid, long>>();
+
         services.AddHostedService<HostedBotService>();
     })
  .Build();

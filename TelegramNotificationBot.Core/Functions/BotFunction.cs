@@ -76,7 +76,7 @@ public class BotFunction(
                     resp.Webhook = new()
                     {
                         Id = guid,
-                        Chat = message.Chat
+                        ChatId = message.Chat.Id
                     };
 
                     var link = new Uri("https://tg-notification-bot.azurewebsites.net/api/Notifications")

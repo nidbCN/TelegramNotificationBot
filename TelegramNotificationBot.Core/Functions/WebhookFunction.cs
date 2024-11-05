@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -10,32 +11,33 @@ namespace TelegramNotificationBot.Core.Functions;
 
 public class WebhookFunction(
     ILogger<WebhookFunction> logger,
-    Dictionary<Guid, long> webhookTable,
     ITelegramBotClient botClient)
 {
 
     [Function("Notifications")]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-        [CosmosDBInput(databaseName: "nidb", containerName: "database", Connection = "CosmosDBConnection")] IList<WebhookBind> webhookList)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "{id}")] HttpRequest req,
+        [SqlInput(commandText: "select * from dbo.NotificationBot_Webhook where Id = @Id",
+            commandType: System.Data.CommandType.Text,
+            parameters: "@Id={id}",
+            connectionStringSetting: "SqlConnectionString")]
+        IEnumerable<WebhookBind> webhookList)
     {
         var token = req.Query["token"];
         logger.LogInformation("Temp debug: path: {path}, base: {pb}", req.Path, req.PathBase);
-        logger.LogInformation("Received notify request, to {id}", token);
+        logger.LogInformation("Received notify request, to {token}", token!);
 
         if (Guid.TryParse(token, out var guid))
         {
             var webhook = webhookList.FirstOrDefault(x => x.Id == guid);
 
             if (webhook is null)
-            {
-                return new NotFoundResult();
-            }
+                return new NotFoundObjectResult("Webhook id not found.");
 
-            logger.LogInformation("Notify to chat id {id}.", webhook.Chat.Id);
+            logger.LogInformation("Notify to chat id {id}.", webhook.ChatId);
             using var reader = new StreamReader(req.Body);
             var message = await reader.ReadToEndAsync();
-            await botClient.SendMessage(webhook.Chat, message, ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+            await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
             return new CreatedResult();
         }
         logger.LogWarning("Can not parse token param: `{str}`", token!);
