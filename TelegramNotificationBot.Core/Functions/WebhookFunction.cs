@@ -14,21 +14,20 @@ public class WebhookFunction(
     ITelegramBotClient botClient)
 {
 
-    private const string _name = "Notifications";
+    private const string Names = "Notifications";
 
-    [Function(_name)]
+    [Function(Names)]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = _name + "/{id:guid}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = Names + "/{id}")] HttpRequest req,
         [SqlInput(commandText: "select * from dbo.NotificationBot_Webhook where Id = @Id",
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
         IEnumerable<WebhookBind> webhookList)
     {
-        using (logger.BeginScope(_name))
+        using (logger.BeginScope(Names))
         {
             logger.LogInformation("Receive webhook request.");
-            logger.LogInformation("Query {cnt} data from database.", webhookList.Count());
             var webhook = webhookList.FirstOrDefault();
 
             if (webhook is null)
