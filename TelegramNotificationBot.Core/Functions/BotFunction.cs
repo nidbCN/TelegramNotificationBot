@@ -70,7 +70,6 @@ public class BotFunction(
                 if (command.Equals("/new", StringComparison.OrdinalIgnoreCase))
                 {
                     var guid = Guid.NewGuid();
-                    webhookTable.Add(guid, message.Chat.Id);
 
                     resp.Webhook = new()
                     {
