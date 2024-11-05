@@ -9,8 +9,9 @@ using Telegram.Bot;
 using TelegramNotificationBot.Core.Configs;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramNotificationBot.Core.Extensions;
 
-namespace TelegramNotificationBot.Core;
+namespace TelegramNotificationBot.Core.Functions;
 
 public class BotFunction(
     ILogger<BotFunction> logger,
@@ -19,39 +20,44 @@ public class BotFunction(
     Dictionary<Guid, long> webhookTable,
     ITelegramBotClient botClient)
 {
+    private const string TelegramBotTokenHeader = "X-Telegram-Bot-Api-Secret-Token";
+
     [Function("Bot")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+    public async Task<MultiResponse> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, CancellationToken cancellationToken)
     {
         logger.LogInformation("Received request, start Authorize.");
 
-        if (!req.Headers.TryGetValue("X-Telegram-Bot-Api-Secret-Token", out var token))
-        {
-            return new UnauthorizedResult();
-        }
+        if (!req.Headers.TryGetValue(TelegramBotTokenHeader, out var token))
+            return new() { HttpResult = new UnauthorizedResult() };
 
         if (token != options.Value.SecretToken)
-            return new ForbidResult();
+            return new() { HttpResult = new ForbidResult() };
 
         logger.LogInformation("Authorization completed.");
 
-        var update = await JsonSerializer.DeserializeAsync<Update>(req.Body, jsonOptions);
+        var update = await JsonSerializer.DeserializeAsync<Update>(req.Body, jsonOptions, cancellationToken);
         if (update is null)
         {
             using var reader = new StreamReader(req.Body);
-            var content = await reader.ReadToEndAsync();
+            var content = await reader.ReadToEndAsync(cancellationToken);
             logger.LogWarning("Deserialize request payload failed, original data: `{content}`.", content);
-            return new OkResult();
+            return new() { HttpResult = new NoContentResult() };
         }
 
         var message = update.Message;
         if (message is null)
         {
             logger.LogWarning("Received unknown update type {type}, ignore.", update.Type);
-            return new OkResult();
+            return new() { HttpResult = new NoContentResult() };
         }
 
         logger.LogInformation("Received message from {name}, chat:{id}, content: {content}"
             , message.From?.Username, message.Chat.Id, message.Text);
+
+        var resp = new MultiResponse
+        {
+            HttpResult = new OkResult()
+        };
 
         try
         {
@@ -67,13 +73,25 @@ public class BotFunction(
                     var guid = Guid.NewGuid();
                     webhookTable.Add(guid, message.Chat.Id);
 
-                    var replyMessage = $"Now you have a Webhook to this chat, send HTTP POST to `https://tg-notification-bot.azurewebsites.net/api/notifications?token={guid.ToString()}` to send message to this chat";
-                    await botClient.SendMessage(message.Chat, replyMessage, parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+                    resp.Webhook = new()
+                    {
+                        Id = guid,
+                        Chat = message.Chat
+                    };
+
+                    var link = new Uri("https://tg-notification-bot.azurewebsites.net/api/Notifications")
+                        .CreateWithQuery(new Dictionary<string, string?>
+                        {
+                            { "token", guid.ToString()},
+                        });
+
+                    var replyMessage = @$"Now you have a Webhook to this chat, send HTTP POST to `{link.ToString()}` to send message to this chat\.";
+                    await botClient.SendMessage(message.Chat, replyMessage, parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
                 }
                 else
                 {
                     logger.LogWarning("Unknown command, send a prompt.");
-                    await botClient.SendMessage(message.Chat, $"Unknown command {command}", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+                    await botClient.SendMessage(message.Chat, @$"Unknown command {command}\.", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
                 }
             }
         }
@@ -82,6 +100,6 @@ public class BotFunction(
             logger.LogError(e, "Error occured. {msg}, {trace}", e.Message, e.StackTrace);
         }
 
-        return new OkResult();
+        return resp;
     }
 }
