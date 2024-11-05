@@ -14,27 +14,31 @@ public class WebhookFunction(
     ITelegramBotClient botClient)
 {
 
-    [Function("Notifications")]
+    private const string _name = "Notifications";
+
+    [Function(_name)]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "./{id:guid}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = _name + "/{id:guid}")] HttpRequest req,
         [SqlInput(commandText: "select * from dbo.NotificationBot_Webhook where Id = @Id",
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
         IEnumerable<WebhookBind> webhookList)
     {
-        logger.LogInformation("Temp debug: path: {path}, base: {pb}", req.Path, req.PathBase);
+        using (logger.BeginScope(_name))
+        {
+            logger.LogInformation("Receive webhook request.");
+            logger.LogInformation("Query {cnt} data from database.", webhookList.Count());
+            var webhook = webhookList.FirstOrDefault();
 
-        logger.LogInformation("Query {cnt} data from database.", webhookList.Count());
-        var webhook = webhookList.FirstOrDefault();
+            if (webhook is null)
+                return new NotFoundObjectResult("Webhook id not found.");
 
-        if (webhook is null)
-            return new NotFoundObjectResult("Webhook id not found.");
-
-        logger.LogInformation("Notify to chat id {id}.", webhook.ChatId);
-        using var reader = new StreamReader(req.Body);
-        var message = await reader.ReadToEndAsync();
-        await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
-        return new CreatedResult();
+            logger.LogInformation("Notify to chat id {id}.", webhook.ChatId);
+            using var reader = new StreamReader(req.Body);
+            var message = await reader.ReadToEndAsync();
+            await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+            return new CreatedResult();
+        }
     }
 }

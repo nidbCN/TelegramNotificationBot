@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot;
 using TelegramNotificationBot.Core.Configs;
+using TelegramNotificationBot.Core.Utils;
 
 namespace TelegramNotificationBot.Core.Services;
 internal class HostedBotService(
@@ -14,19 +15,18 @@ internal class HostedBotService(
 {
 
     public async Task StartAsync(CancellationToken cancellationToken)
-        => await UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken, cancellationToken);
-
-
-    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        // Remove webhook on app shutdown
-        logger.LogInformation("Removing webhook");
-        await botClient.DeleteWebhook(cancellationToken: cancellationToken);
+        logger.LogInformation("Host start, set webhook to {url}.", options.Value.BotWebhookUrl);
+        await TelegramWebhookHelper.UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken, cancellationToken);
     }
 
-    public static async Task UpdateWebhook(ITelegramBotClient bot, Uri webhookUrl, string token, CancellationToken cancellationToken)
-        => await bot.SetWebhook(url: webhookUrl.ToString(),
-            allowedUpdates: [UpdateType.Message],
-            secretToken: token,
-            cancellationToken: cancellationToken);
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        // Remove webhook on app shutdown
+        logger.LogInformation("Host stop, removing webhook");
+        // await botClient.DeleteWebhook(cancellationToken: cancellationToken);
+        return Task.CompletedTask;
+    }
+
+
 }

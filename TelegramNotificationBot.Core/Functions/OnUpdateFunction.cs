@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using TelegramNotificationBot.Core.Configs;
+using TelegramNotificationBot.Core.Utils;
 
 namespace TelegramNotificationBot.Core.Functions;
 
@@ -20,10 +21,7 @@ public class OnUpdateFunction(ILogger<OnUpdateFunction> logger,
     {
         logger.LogInformation("Event type: {type}, Event subject: {subject}", cloudEvent.Type, cloudEvent.Subject);
 
-        await botClient.SetWebhook(
-            options.Value.BotWebhookUrl.ToString(),
-            allowedUpdates: [UpdateType.Message],
-            secretToken: options.Value.SecretToken,
-            cancellationToken: cancellationToken);
+        await TelegramWebhookHelper.UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken,
+            cancellationToken);
     }
 }
