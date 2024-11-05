@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot;
 using TelegramNotificationBot.Core.Configs;
 using TelegramNotificationBot.Core.Utils;

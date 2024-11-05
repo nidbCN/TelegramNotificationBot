@@ -6,7 +6,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 using TelegramNotificationBot.Core.Configs;
 using TelegramNotificationBot.Core.Utils;
 
