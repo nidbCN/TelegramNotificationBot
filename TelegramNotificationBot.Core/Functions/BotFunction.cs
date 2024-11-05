@@ -17,7 +17,6 @@ public class BotFunction(
     ILogger<BotFunction> logger,
     IOptions<TelegramConfig> options,
     JsonSerializerOptions jsonOptions,
-    Dictionary<Guid, long> webhookTable,
     ITelegramBotClient botClient)
 {
     private const string TelegramBotTokenHeader = "X-Telegram-Bot-Api-Secret-Token";
