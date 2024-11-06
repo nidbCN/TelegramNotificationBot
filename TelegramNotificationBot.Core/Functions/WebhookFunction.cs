@@ -15,25 +15,25 @@ public class WebhookFunction(
     ITelegramBotClient botClient)
 {
     private const string FunctionName = "Notifications";
+    private const string ChatIdName = "ChatId";
 
     [Function(FunctionName)]
     public async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = FunctionName + "/{id}")] HttpRequest req,
-        [SqlInput(commandText: "SELECT [ChatId] FROM [dbo].[NotificationBot_Webhook] WHERE Id = @Id;",
+        [SqlInput(commandText: $"SELECT [{ChatIdName}] FROM [dbo].[NotificationBot_Webhook] WHERE Id = @Id;",
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
-        IEnumerable<string> chatIdList)
+        IList<IDictionary<string,long>> chatIdList)
     {
         using (logger.BeginScope(FunctionName))
         {
             logger.LogInformation("Receive webhook request.");
 
-            var chatId = chatIdList.FirstOrDefault();
-
-            if (chatId is null)
+            if (chatIdList.Count != 0)
                 return new NotFoundObjectResult("Webhook id not found.");
 
+            var chatId = chatIdList[0][ChatIdName];
             logger.LogInformation("Notify to chat id {id}.", chatId);
             using var reader = new StreamReader(req.Body);
             var message = await reader.ReadToEndAsync();
