@@ -1,6 +1,8 @@
 // Default URL for triggering event grid function in the local environment.
 // http://localhost:7071/runtime/webhooks/EventGrid?functionName={functionname}
 
+using System.Text.Json.Serialization;
+using Azure.Messaging;
 using Azure.Messaging.EventGrid;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -16,13 +18,34 @@ public class OnUpdateFunction(ILogger<OnUpdateFunction> logger,
     IOptions<TelegramConfig> options)
 {
     [Function(nameof(OnUpdateFunction))]
-    public async Task Run([EventGridTrigger] string eventData, CancellationToken cancellationToken)
+    public async Task Run([EventGridTrigger] MyEvent eventData, CancellationToken cancellationToken)
     {
-        var cloudEvent = EventGridEvent.Parse(BinaryData.FromString(eventData));
-
-        logger.LogInformation("Event type: {type}, Event subject: {subject}, Topic: {topic}", cloudEvent.EventType, cloudEvent.Subject, cloudEvent.Topic);
+        logger.LogInformation("Event type: {type}, Event subject: {subject}, Topic: {topic}", eventData.EventType, eventData.Subject, eventData.Topic);
 
         await TelegramWebhookHelper.UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken,
             cancellationToken);
     }
+}
+
+public record MyEvent
+{
+    [JsonPropertyName("id")]
+    public required string Id { get; set; }
+
+    [JsonPropertyName("topic")]
+    public required string Topic { get; set; }
+
+    [JsonPropertyName("subject")]
+    public required string Subject { get; set; }
+
+    [JsonPropertyName("eventType")]
+    public required string EventType { get; set; }
+
+    [JsonPropertyName("eventTime")]
+    public required DateTime EventTime { get; set; }
+
+    [JsonPropertyName("data")]
+    public BinaryData? Data { get; set; }
+    [JsonPropertyName("dataVersion")]
+    public string? DataVersion { get; set; }
 }
