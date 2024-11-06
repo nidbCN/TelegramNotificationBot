@@ -19,27 +19,26 @@ public class WebhookFunction(
     [Function(FunctionName)]
     public async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = FunctionName + "/{id}")] HttpRequest req,
-        [SqlInput(commandText: "select * from dbo.NotificationBot_Webhook where Id = @Id",
+        [SqlInput(commandText: "SELECT TOP 1 [ChatId] FROM [dbo].[NotificationBot_Webhook] WHERE Id = @Id;",
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
-        IEnumerable<WebhookBind> webhookList)
+        long? chatId)
     {
         using (logger.BeginScope(FunctionName))
         {
             logger.LogInformation("Receive webhook request.");
-            var webhook = webhookList.FirstOrDefault();
 
-            if (webhook is null)
+            if (chatId is null)
                 return new NotFoundObjectResult("Webhook id not found.");
 
-            logger.LogInformation("Notify to chat id {id}.", webhook.ChatId);
+            logger.LogInformation("Notify to chat id {id}.", chatId);
             using var reader = new StreamReader(req.Body);
             var message = await reader.ReadToEndAsync();
 
             try
             {
-                await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2,
+                await botClient.SendMessage(chatId, message, ParseMode.MarkdownV2,
                     replyMarkup: new ReplyKeyboardRemove());
             }
             catch (ApiRequestException apiException)
