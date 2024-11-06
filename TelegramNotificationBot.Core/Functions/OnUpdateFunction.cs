@@ -1,7 +1,7 @@
 // Default URL for triggering event grid function in the local environment.
 // http://localhost:7071/runtime/webhooks/EventGrid?functionName={functionname}
 
-using Azure.Messaging;
+using Azure.Messaging.EventGrid;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,9 +16,11 @@ public class OnUpdateFunction(ILogger<OnUpdateFunction> logger,
     IOptions<TelegramConfig> options)
 {
     [Function(nameof(OnUpdateFunction))]
-    public async Task Run([EventGridTrigger] CloudEvent cloudEvent, CancellationToken cancellationToken)
+    public async Task Run([EventGridTrigger] string eventData, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Event type: {type}, Event subject: {subject}", cloudEvent.Type, cloudEvent.Subject);
+        var cloudEvent = EventGridEvent.Parse(BinaryData.FromString(eventData));
+
+        logger.LogInformation("Event type: {type}, Event subject: {subject}, Topic: {topic}", cloudEvent.EventType, cloudEvent.Subject, cloudEvent.Topic);
 
         await TelegramWebhookHelper.UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken,
             cancellationToken);
