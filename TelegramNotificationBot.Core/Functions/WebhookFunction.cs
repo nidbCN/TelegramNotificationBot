@@ -44,7 +44,7 @@ public class WebhookFunction(
             }
             catch (ApiRequestException apiException)
             {
-                return new BadRequestObjectResult(apiException);
+                return new BadRequestObjectResult(new { apiException.Message });
             }
             catch (Exception ex)
             {
