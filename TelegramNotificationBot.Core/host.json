@@ -8,10 +8,5 @@
             },
             "enableLiveMetricsFilters": true
         }
-    },
-    "functions": [
-        "Notifications",
-        "OnUpdateFunction",
-        "TelegramMessages"
-    ]
+    }
 }
