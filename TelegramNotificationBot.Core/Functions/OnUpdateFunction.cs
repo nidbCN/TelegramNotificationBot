@@ -20,9 +20,7 @@ public class OnUpdateFunction(ILogger<OnUpdateFunction> logger,
     [Function(nameof(OnUpdateFunction))]
     public async Task Run([EventGridTrigger] MyEvent eventData, CancellationToken cancellationToken)
     {
-        CloudEvent c;
-
-        logger.LogInformation("Event type: {type}, Event subject: {subject}, Topic: {topic}", eventData.EventType, eventData.Subject, eventData.Topic);
+        logger.LogInformation("Event type: {type}, Event subject: {subject}, Topic: {topic}. Execute set webhook.", eventData.EventType, eventData.Subject, eventData.Topic);
 
         await TelegramWebhookHelper.UpdateWebhook(botClient, options.Value.BotWebhookUrl, options.Value.SecretToken,
             cancellationToken);

@@ -3,12 +3,12 @@ using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace TelegramNotificationBot.Core.Functions;
 
-public record MultiResponse
+public record MultiResponse(IActionResult ActionResult)
 {
     [SqlOutput("dbo.NotificationBot_Webhook", connectionStringSetting: "SqlConnectionString")]
     public WebhookBind? Webhook { get; set; }
 
-    public required IActionResult HttpResult { get; set; }
+    public IActionResult HttpResult { get; set; } = ActionResult;
 }
 
 public record WebhookBind

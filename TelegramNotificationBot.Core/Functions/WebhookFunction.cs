@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -13,19 +14,18 @@ public class WebhookFunction(
     ILogger<WebhookFunction> logger,
     ITelegramBotClient botClient)
 {
+    private const string FunctionName = "Notifications";
 
-    private const string Names = "Notifications";
-
-    [Function(Names)]
+    [Function(FunctionName)]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = Names + "/{id}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = FunctionName + "/{id}")] HttpRequest req,
         [SqlInput(commandText: "select * from dbo.NotificationBot_Webhook where Id = @Id",
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
         IEnumerable<WebhookBind> webhookList)
     {
-        using (logger.BeginScope(Names))
+        using (logger.BeginScope(FunctionName))
         {
             logger.LogInformation("Receive webhook request.");
             var webhook = webhookList.FirstOrDefault();
@@ -36,7 +36,21 @@ public class WebhookFunction(
             logger.LogInformation("Notify to chat id {id}.", webhook.ChatId);
             using var reader = new StreamReader(req.Body);
             var message = await reader.ReadToEndAsync();
-            await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove());
+
+            try
+            {
+                await botClient.SendMessage(webhook.ChatId, message, ParseMode.MarkdownV2,
+                    replyMarkup: new ReplyKeyboardRemove());
+            }
+            catch (ApiRequestException apiException)
+            {
+                return new BadRequestObjectResult(apiException);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error occured during send message to telegram.");
+            }
+
             return new CreatedResult();
         }
     }

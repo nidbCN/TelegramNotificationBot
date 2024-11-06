@@ -31,13 +31,13 @@ public class BotFunction(
             if (!req.Headers.TryGetValue(TelegramBotTokenHeader, out var token))
             {
                 logger.LogWarning("Authorize failed, reason: no token was provided.");
-                return new() { HttpResult = new UnauthorizedResult() };
+                return new(new UnauthorizedResult());
             }
 
             if (token != options.Value.SecretToken)
             {
                 logger.LogWarning("Authorize failed, reason: token {token} doesn't match.", token!);
-                return new() { HttpResult = new ForbidResult() };
+                return new(new ForbidResult());
             }
 
             logger.LogInformation("Authorization completed.");
@@ -48,23 +48,20 @@ public class BotFunction(
                 using var reader = new StreamReader(req.Body);
                 var content = await reader.ReadToEndAsync(cancellationToken);
                 logger.LogWarning("Deserialize request payload failed, original data: `{content}`.", content);
-                return new() { HttpResult = new NoContentResult() };
+                return new(new BadRequestResult());
             }
 
             var message = update.Message;
             if (message is null)
             {
                 logger.LogWarning("Received unknown update type {type}, ignore.", update.Type);
-                return new() { HttpResult = new NoContentResult() };
+                return new(new NoContentResult());
             }
 
             logger.LogInformation("Received message from {name}, chat:{id}, content: {content}"
                 , message.From?.Username, message.Chat.Id, message.Text);
 
-            var resp = new MultiResponse
-            {
-                HttpResult = new OkResult()
-            };
+            var resp = new MultiResponse(new OkResult());
 
             try
             {
@@ -90,11 +87,11 @@ public class BotFunction(
                         var replyMessage = @$"Now you have a Webhook to this chat, send HTTP POST to `{link}` to send message to this chat\.";
                         await botClient.SendMessage(message.Chat, replyMessage, parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
                     }
-                    else
-                    {
-                        logger.LogWarning("Unknown command, send a prompt.");
-                        await botClient.SendMessage(message.Chat, @$"Unknown command {command}\.", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
-                    }
+                }
+                else
+                {
+                    logger.LogWarning("Unknown command, send a prompt.");
+                    await botClient.SendMessage(message.Chat, @$"Unknown command `{message.Text}`\.", parseMode: ParseMode.MarkdownV2, replyMarkup: new ReplyKeyboardRemove(), cancellationToken: cancellationToken);
                 }
             }
             catch (Exception e)

@@ -20,7 +20,7 @@ var host = new HostBuilder()
 
         services.Configure<TelegramConfig>(telegramConfig);
         services
-            .AddHttpClient("telegram_webhook")
+            .AddHttpClient(nameof(ITelegramBotClient))
             .AddTypedClient<ITelegramBotClient>(httpClient =>
                 new TelegramBotClient(telegramConfig.Get<TelegramConfig>()!.BotToken, httpClient));
         services.ConfigureTelegramBotMvc();
