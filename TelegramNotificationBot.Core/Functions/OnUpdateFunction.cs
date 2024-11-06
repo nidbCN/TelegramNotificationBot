@@ -45,7 +45,7 @@ public record MyEvent
     public DateTime EventTime { get; set; } = default!;
 
     [JsonPropertyName("data")]
-    public BinaryData? Data { get; set; }
+    public string? Data { get; set; }
     [JsonPropertyName("dataVersion")]
     public string? DataVersion { get; set; }
 }
