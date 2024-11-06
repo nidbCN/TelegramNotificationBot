@@ -23,22 +23,22 @@ public class WebhookFunction(
             commandType: System.Data.CommandType.Text,
             parameters: "@Id={id}",
             connectionStringSetting: "SqlConnectionString")]
-        IList<long> chatIdList)
+        long? chatId)
     {
         using (logger.BeginScope(FunctionName))
         {
             logger.LogInformation("Receive webhook request.");
 
-            if (chatIdList.Count == 0)
+            if (chatId is null)
                 return new NotFoundObjectResult("Webhook id not found.");
 
-            logger.LogInformation("Notify to chat id {id}.", chatIdList[0]);
+            logger.LogInformation("Notify to chat id {id}.", chatId);
             using var reader = new StreamReader(req.Body);
             var message = await reader.ReadToEndAsync();
 
             try
             {
-                await botClient.SendMessage(chatIdList[0], message, ParseMode.MarkdownV2,
+                await botClient.SendMessage(chatId, message, ParseMode.MarkdownV2,
                     replyMarkup: new ReplyKeyboardRemove());
             }
             catch (ApiRequestException apiException)
