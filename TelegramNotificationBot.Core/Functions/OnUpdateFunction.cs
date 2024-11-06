@@ -30,19 +30,19 @@ public class OnUpdateFunction(ILogger<OnUpdateFunction> logger,
 public record MyEvent
 {
     [JsonPropertyName("id")]
-    public required string Id { get; set; }
+    public string Id { get; set; } = default!;
 
     [JsonPropertyName("topic")]
-    public required string Topic { get; set; }
+    public string Topic { get; set; } = default!;
 
     [JsonPropertyName("subject")]
-    public required string Subject { get; set; }
+    public string Subject { get; set; } = default!;
 
     [JsonPropertyName("eventType")]
-    public required string EventType { get; set; }
+    public string EventType { get; set; } = default!;
 
     [JsonPropertyName("eventTime")]
-    public required DateTime EventTime { get; set; }
+    public DateTime EventTime { get; set; } = default!;
 
     [JsonPropertyName("data")]
     public BinaryData? Data { get; set; }
